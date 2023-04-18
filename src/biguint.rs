@@ -9,21 +9,19 @@ pub struct BigUint {
 
 impl BigUint {
     pub fn new(num: u64) -> Self {
-        let data = num.to_string().chars().map(|d| d.to_digit(10).unwrap()).rev()
+        let data = num
+            .to_string()
+            .chars()
+            .map(|d| d.to_digit(10).unwrap())
+            .rev()
             .collect();
-        BigUint {
-            data
-        }
+        BigUint { data }
     }
     pub fn zero() -> Self {
-        BigUint {
-            data: vec![0_u8]
-        }
+        BigUint { data: vec![0_u8] }
     }
     pub fn one() -> Self {
-        BigUint {
-            data: vec![1_u8]
-        }
+        BigUint { data: vec![1_u8] }
     }
     pub fn bits(&self) -> usize {
         self.data.len()
@@ -41,7 +39,11 @@ impl From<u64> for BigUint {
 
 impl Display for BigUint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.data.iter().rev().map(|d| d.to_string()).collect())
+        write!(
+            f,
+            "{}",
+            self.data.iter().rev().map(|d| d.to_string()).collect()
+        )
     }
 }
 
@@ -90,7 +92,7 @@ impl<'a> Sub<BigUint> for &'a BigUint {
 
 impl PartialOrd for BigUint {
     fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
-        Some(self.cmp(self, rhs))
+        Some(self.cmp(rhs))
     }
 }
 
