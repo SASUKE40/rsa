@@ -1,6 +1,8 @@
-use num_bigint::BigUint;
 pub mod algorithm;
-use crate::algorithm::generate_multi_prime_key;
+pub mod biguint;
+
+use crate::algorithm::{generate_multi_prime_key, EXP};
+use crate::biguint::BigUint;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -11,11 +13,18 @@ pub enum Error {
     NprimesTooSmall,
     TooFewPrimes,
 }
+
+pub trait RandPrime {
+    /// Generate a random prime number with as many bits as given.
+    fn gen_prime(&mut self, bits: usize) -> BigUint;
+}
+
 #[derive(Clone, Debug)]
 pub struct PublicKey {
     n: BigUint,
     e: BigUint,
 }
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct PrivateKey {
@@ -25,10 +34,19 @@ pub struct PrivateKey {
 }
 
 impl PrivateKey {
-    pub fn new() -> Result<Self> {
-        let mut rng = rand::thread_rng();
-        let bit_size = 4096;
-        return generate_multi_prime_key(&mut rng, 2, bit_size);
+    pub fn new<R: RandPrime>(rng: &mut R, bit_size: usize) -> Result<Self> {
+        return generate_multi_prime_key(rng, 2, bit_size);
+    }
+    pub fn from_public_key(
+        public_key: &PublicKey,
+        d: BigUint,
+        primes: Vec<BigUint>,
+    ) -> Result<Self> {
+        Ok(PrivateKey {
+            public_key: public_key.clone(),
+            d,
+            primes,
+        })
     }
     pub fn from_components(
         n: BigUint,
@@ -54,18 +72,30 @@ impl From<&PrivateKey> for PublicKey {
 }
 
 impl PublicKey {
+    pub fn new(p: BigUint, q: BigUint) -> Self {
+        return PublicKey {
+            n: p.mul(q),
+            e: BigUint::from(EXP),
+        };
+    }
     pub fn encrypt(self, m: &BigUint) -> BigUint {
         m.modpow(&self.e, &self.n)
     }
 }
+
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
     fn test_rsa() {
-        let private_key = PrivateKey::new().expect("failed to generate a private key");
+        let public_key = PublicKey::new(BigUint::from(2_u64), BigUint::from(3_u64));
+        let private_key = PrivateKey::from_public_key(
+            &public_key,
+            BigUint::from(2_u64),
+            vec![BigUint::from(2_u64), BigUint::from(3_u64)],
+        )
+            .expect("failed to generate a private key");
         println!("Private Key: {:?}", private_key);
         let public_key = PublicKey::from(&private_key);
         println!("Public Key: {:?}", public_key);
